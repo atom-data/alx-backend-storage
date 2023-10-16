@@ -4,7 +4,16 @@ import pymongo
 
 
 def list_all(mongo_collection):
-    """ lists all documents in a collection """
-    if not mongo_collection:
+    """Lists all documents in a collection.
+
+    Args:
+      mongo_collection: A pymongo collection object.
+
+    Returns:
+      A list of all documents in the collection.
+    """
+
+    if mongo_collection is None:
         return []
-    return list(mongo_collection.find())
+    else:
+        return list(mongo_collection.find())
