@@ -2,11 +2,13 @@
 """Log stats"""
 from pymongo import MongoClient
 
+
 def helper(a: dict) -> int:
     """ Return log """
     client = MongoClient('mongodb://127.0.0.1:27017')
     logs = client.logs.nginx
     return logs.count_documents(a)
+
 
 def main():
     """ provides some stats about Nginx logs stored in MongoDB """
