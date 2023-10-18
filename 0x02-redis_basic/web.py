@@ -1,30 +1,34 @@
 #!/usr/bin/env python3
-""" Redis with requests """
-import requests
-from functools import wraps
+"""
+Implements an expiring web cache and tracker
+"""
 from typing import Callable
+from functools import wraps
 import redis
+import requests
+redis_client = redis.Redis()
 
 
-def count(method: Callable):
-    """ Count the call to requests """
-    r = redis.Redis()
-
+def url_count(method: Callable) -> Callable:
+    """counts how many times an url is accessed"""
     @wraps(method)
-    def wrapped(url):
-        """ function that will count """
-        r.incr(f"count:{url}")
-        expiration_count = r.get(f"cached:{url}")
-        if expiration_count:
-            return expiration_count.decode('utf-8')
-        html = method(url)
-        r.setex(f"cached:{url}", 10, html)
-        return html
-
-    return wrapped
+    def wrapper(*args, **kwargs):
+        url = args[0]
+        redis_client.incr(f"count:{url}")
+        cached = redis_client.get(f'{url}')
+        if cached:
+            return cached.decode('utf-8')
+        redis_client.setex(f'{url}, 10, {method(url)}')
+        return method(*args, **kwargs)
+    return wrapper
 
 
-@count
+@url_count
 def get_page(url: str) -> str:
-    """ module to obtain the HTML """
-    return requests.get(url).text
+    """get a page and cache value"""
+    response = requests.get(url)
+    return response.text
+
+
+if __name__ == "__main__":
+    get_page('http://slowwly.robertomurray.co.uk')
