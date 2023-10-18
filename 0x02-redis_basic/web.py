@@ -7,6 +7,7 @@ import redis
 # Connect to Redis
 r = redis.Redis()
 
+
 def get_page(url: str) -> str:
     """
     Get the HTML content of a particular URL.
@@ -34,4 +35,3 @@ def get_page(url: str) -> str:
     r.set("html:{}".format(url), html, ex=10)
 
     return html
-
