@@ -1,34 +1,37 @@
 #!/usr/bin/env python3
-"""
-Implements an expiring web cache and tracker
-"""
-from typing import Callable
-from functools import wraps
-import redis
+"""Redis with Requests"""
 import requests
-redis_client = redis.Redis()
+import redis
 
 
-def url_count(method: Callable) -> Callable:
-    """counts how many times an url is accessed"""
-    @wraps(method)
-    def wrapper(*args, **kwargs):
-        url = args[0]
-        redis_client.incr(f"count:{url}")
-        cached = redis_client.get(f'{url}')
-        if cached:
-            return cached.decode('utf-8')
-        redis_client.setex(f'{url}, 10, {method(url)}')
-        return method(*args, **kwargs)
-    return wrapper
+# Connect to Redis
+r = redis.Redis()
 
-
-@url_count
 def get_page(url: str) -> str:
-    """get a page and cache value"""
+    """
+    Get the HTML content of a particular URL.
+
+    Args:
+        url: The URL to fetch.
+
+    Returns:
+        The HTML content of the URL.
+    """
+
+    # Increment the access count for the URL
+    r.incr("count:{}".format(url))
+
+    # Check if the HTML content is cached
+    cached_html = r.get("html:{}".format(url))
+    if cached_html is not None:
+        return cached_html.decode()
+
+    # Fetch the HTML content of the URL
     response = requests.get(url)
-    return response.text
+    html = response.content
 
+    # Cache the HTML content for 10 seconds
+    r.set("html:{}".format(url), html, ex=10)
 
-if __name__ == "__main__":
-    get_page('http://slowwly.robertomurray.co.uk')
+    return html
+
